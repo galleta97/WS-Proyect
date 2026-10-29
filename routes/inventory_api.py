@@ -16,15 +16,12 @@ from models import Product, StockAlert, StockMovement, Supplier
 inventory_api_bp = Blueprint("inventory_api", __name__, url_prefix="/api")
 
 
-def _reference_retail():
-    from routes.api import REFERENCE_RETAIL_CODE
-    return REFERENCE_RETAIL_CODE
-
-
 @inventory_api_bp.route("/dashboard/summary")
 @login_required
 def summary():
-    return jsonify(dashboard_summary(_reference_retail()))
+    # El precio propio sale del catálogo de la ferretería (Product.sale_price);
+    # todas las tiendas capturadas, Promart y Sodimac incluidas, son competencia.
+    return jsonify(dashboard_summary(reference_retail_code=None))
 
 
 @inventory_api_bp.route("/inventory/products")
