@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Precios en webs{% endblock %}
+{% block header %}Precios en webs (Web Homes){% endblock %}
+
+{% block content %}
+<div class="filters-row">
+  <div class="filter">
+    <label>Retails</label>
+    <div id="f-retail"></div>
+  </div>
+  <div class="filter">
+    <label>Brands</label>
+    <div id="f-brand"></div>
+  </div>
+  <button class="btn-search" id="btn-search">Search</button>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <h2>Prices</h2>
+    <button class="btn-export" id="btn-export">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      XLSX
+    </button>
+  </div>
+  <div id="table-wrap"><p class="empty"><span class="empty-icon">◇</span>No data</p></div>
+  <div class="pagination" id="pagination"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/web_homes.js') }}"></script>
+{% endblock %}

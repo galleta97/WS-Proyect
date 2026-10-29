@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciar sesión — {{ app_name }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body class="auth-body">
+
+<div class="auth-card">
+  <a href="{{ url_for('views.landing') }}" class="logo auth-logo">{{ app_name }}</a>
+  <h1 class="auth-title">Inicia sesión</h1>
+
+  {% for category, message in get_flashed_messages(with_categories=true) %}
+    <div class="flash flash-{{ category }}">{{ message }}</div>
+  {% endfor %}
+
+  <form method="POST" class="auth-form">
+    <label>Correo</label>
+    <input type="email" name="email" required autofocus>
+
+    <label>Contraseña</label>
+    <input type="password" name="password" required>
+
+    <button type="submit" class="btn btn-primary btn-lg auth-submit">Entrar</button>
+  </form>
+
+  <p class="auth-switch">¿No tienes cuenta? <a href="{{ url_for('auth.register') }}">Crear cuenta</a></p>
+</div>
+
+</body>
+</html>

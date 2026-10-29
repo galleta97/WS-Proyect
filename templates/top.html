@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Búsqueda de precios{% endblock %}
+
+{% block content %}
+<div class="tabs">
+  <button class="tab active" data-mode="search">Search</button>
+  <button class="tab" data-mode="top-sales">Top Sales</button>
+</div>
+
+<div class="filters-row">
+  <div class="filter">
+    <label>Categories</label>
+    <select id="f-category"></select>
+  </div>
+  <div class="filter">
+    <label>Retails</label>
+    <div id="f-retail"></div>
+  </div>
+  <div class="filter">
+    <label>Brands</label>
+    <div id="f-brand"></div>
+  </div>
+  <div class="filter">
+    <label>Features</label>
+    <div id="f-feature"></div>
+  </div>
+  <div class="filter">
+    <label>Products</label>
+    <div id="f-product"></div>
+  </div>
+  <div class="filter" id="event-filter" style="display:none">
+    <label>Event</label>
+    <select id="f-event"></select>
+  </div>
+  <div class="filter" id="date-filter" style="display:none">
+    <label>Fecha</label>
+    <input type="date" id="f-date">
+  </div>
+  <span class="filter-meta">
+    <em title="Modes siempre muestra el precio más reciente disponible por tienda">Precios más recientes por tienda</em>
+    <button class="icon-btn" id="btn-refresh" title="Refrescar filtros">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.13-3.36L23 10M1 14l5.36 4.36A9 9 0 0020.49 15"/></svg>
+    </button>
+  </span>
+  <button class="btn-search" id="btn-search">Search</button>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <h2>Products</h2>
+    <button class="btn-export" id="btn-export">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      XLSX
+    </button>
+  </div>
+  <button class="btn-search" id="btn-graph" disabled style="margin-bottom:14px;">Generate graphs by selected products</button>
+  <div id="table-wrap"><p class="empty"><span class="empty-icon">◇</span>No data</p></div>
+  <div class="pager-bar" id="pager"></div>
+</div>
+
+<div id="graphs-section" style="display:none; margin-top:22px;">
+  <div class="filters-row" style="margin-bottom:18px;">
+    <div class="filter">
+      <label>Selected</label>
+      <div id="selected-chips" style="display:flex; gap:6px; flex-wrap:wrap; padding-top:8px;"></div>
+    </div>
+    <div class="filter">
+      <label>Desde</label>
+      <input type="date" id="graph-from">
+    </div>
+    <div class="filter">
+      <label>Hasta</label>
+      <input type="date" id="graph-to">
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:20px;">
+    <h2>Price Tracking</h2>
+    <div class="chart-card-body"><canvas id="chart-tracking"></canvas></div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:20px;">
+    <h2>Retails by product</h2>
+    <div class="pie-grid" id="pie-charts"></div>
+  </div>
+
+  <div class="chart-card">
+    <h2>Products by Retail</h2>
+    <div class="chart-card-body"><canvas id="chart-by-retail"></canvas></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/top.js') }}"></script>
+{% endblock %}

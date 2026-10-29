@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Alertas{% endblock %}
+
+{% block content %}
+<div class="panel">
+  <div class="panel-header">
+    <h2>Alertas recientes</h2>
+    <button class="icon-btn" id="btn-refresh" title="Refrescar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.13-3.36L23 10M1 14l5.36 4.36A9 9 0 0020.49 15"/></svg>
+    </button>
+  </div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">
+    Se genera una alerta cada vez que el precio o el stock de un SKU cambia respecto al último dato guardado para esa tienda.
+  </p>
+  <div id="table-wrap"><p class="empty"><span class="empty-icon">◇</span>No hay alertas todavía</p></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/alerts.js') }}"></script>
+{% endblock %}

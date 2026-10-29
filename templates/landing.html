@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ app_name }} — Inteligencia de precios para retail en Perú</title>
+<meta name="description" content="Vigía monitorea los precios de la competencia en las principales tiendas del Perú todos los días, y te muestra exactamente qué cambió.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href="{{ url_for('views.landing') }}" class="logo">{{ app_name }}</a>
+    <nav class="nav-links">
+      <a href="#producto">Producto</a>
+      <a href="#como-funciona">Cómo funciona</a>
+      <a href="#demo">Demo</a>
+      <a href="#precios">Precios</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="{{ url_for('auth.login') }}" class="nav-login">Iniciar sesión</a>
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Crear cuenta</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="hero">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <h1>Cuando la competencia baja un precio,<br>tú te enteras primero.</h1>
+        <p class="hero-sub">{{ app_name }} revisa los precios de Falabella, Ripley, Sodimac, Promart y las
+        principales tiendas del Perú todos los días, cruza el mismo producto entre tiendas,
+        y te muestra exactamente qué cambió — sin planillas armadas a mano.</p>
+        <div class="hero-cta">
+          <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Crear cuenta gratis</a>
+          <a href="#como-funciona" class="btn btn-ghost btn-lg">Ver cómo funciona</a>
+        </div>
+      </div>
+
+      <div class="mock-browser">
+        <div class="browser-bar">
+          <span class="browser-dot" style="background:#E8432E"></span>
+          <span class="browser-dot" style="background:#eab308"></span>
+          <span class="browser-dot" style="background:#12B886"></span>
+          <span class="browser-url">app.vigia.pe/top</span>
+        </div>
+        <div class="mock-body">
+          <div class="mock-head">
+            <h4>Price Tracking</h4>
+            <span class="mock-pill">↓ XLSX</span>
+          </div>
+          <div class="mock-chart-wrap"><canvas id="heroChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker-track">
+        <span class="ticker-item down">PROMART · Refrigeradora 411L <b>S/ 1,899</b> ▼ 8%</span>
+        <span class="ticker-item up">SODIMAC · Taladro inalámbrico <b>S/ 249</b> ▲ 4%</span>
+        <span class="ticker-item down">FALABELLA · Smart TV 55" <b>S/ 1,459</b> ▼ 12%</span>
+        <span class="ticker-item flat">TOTTUS · Microondas 20L <b>S/ 329</b> ―</span>
+        <span class="ticker-item down">RIPLEY · Lavadora 16kg <b>S/ 1,699</b> ▼ 6%</span>
+        <span class="ticker-item up">PLAZAVEA · Aire acondicionado <b>S/ 1,299</b> ▲ 3%</span>
+        <span class="ticker-item down">PROMART · Refrigeradora 411L <b>S/ 1,899</b> ▼ 8%</span>
+        <span class="ticker-item up">SODIMAC · Taladro inalámbrico <b>S/ 249</b> ▲ 4%</span>
+        <span class="ticker-item down">FALABELLA · Smart TV 55" <b>S/ 1,459</b> ▼ 12%</span>
+        <span class="ticker-item flat">TOTTUS · Microondas 20L <b>S/ 329</b> ―</span>
+        <span class="ticker-item down">RIPLEY · Lavadora 16kg <b>S/ 1,699</b> ▼ 6%</span>
+        <span class="ticker-item up">PLAZAVEA · Aire acondicionado <b>S/ 1,299</b> ▲ 3%</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="retailers">
+    <p class="retailers-label">Monitoreamos precios en</p>
+    <div class="retailers-row">
+      <span class="mp-item"><span class="mp-badge" style="background:#0e2f7a">FA</span>Falabella</span>
+      <span class="mp-item"><span class="mp-badge" style="background:#00558c">RI</span>Ripley</span>
+      <span class="mp-item"><span class="mp-badge" style="background:#f97316">SO</span>Sodimac</span>
+      <span class="mp-item"><span class="mp-badge" style="background:#e11d48">PR</span>Promart</span>
+      <span class="mp-item"><span class="mp-badge" style="background:#eab308">TO</span>Tottus</span>
+      <span class="mp-item"><span class="mp-badge" style="background:#d81b60">PV</span>PlazaVea</span>
+      <span class="mp-item"><span class="mp-badge" style="background:#12B886">OE</span>Oechsle</span>
+      <span class="mp-item"><span class="mp-badge" style="background:#545B6E">ME</span>Metro</span>
+    </div>
+  </section>
+
+  <section class="features" id="producto">
+    <div class="section-head">
+      <h2>Una tabla, no diez pestañas de Excel</h2>
+      <p>Todo lo que un equipo de pricing necesita revisar cada mañana, en un solo lugar.</p>
+    </div>
+    <div class="feature-grid">
+      <article class="feature feature-big">
+        <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg></div>
+        <h3>Comparación exacta por producto</h3>
+        <p>Una fila por producto, con el precio de cada tienda donde exista — sin mezclar
+        modelos distintos ni datos desactualizados en la misma fila.</p>
+      </article>
+      <article class="feature">
+        <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div>
+        <h3>Historial día a día</h3>
+        <p>Línea de tiempo de precios para ver exactamente cuándo se movió cada uno.</p>
+      </article>
+      <article class="feature">
+        <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg></div>
+        <h3>Exporta cuando quieras</h3>
+        <p>Todo lo que ves en pantalla sale también en Excel, listo para tu propio reporte.</p>
+      </article>
+      <article class="feature feature-wide">
+        <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4M8 3v4M2 11h20"/></svg></div>
+        <h3>Datos de importaciones aduaneras</h3>
+        <p>Además del precio de venta, cruza con volúmenes de importación por marca y
+        categoría — para entender no solo cuánto cobra la competencia, sino cuánto está trayendo.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="how" id="como-funciona">
+    <div class="section-head">
+      <h2>Cómo funciona</h2>
+    </div>
+    <ol class="how-steps">
+      <li>
+        <span class="how-num">1</span>
+        <h3>Recolectamos</h3>
+        <p>Todos los días revisamos las tiendas y fuentes de datos que monitoreas.</p>
+      </li>
+      <li>
+        <span class="how-num">2</span>
+        <h3>Cruzamos</h3>
+        <p>Igualamos el mismo producto entre tiendas para comparar precios reales, no aproximados.</p>
+      </li>
+      <li>
+        <span class="how-num">3</span>
+        <h3>Tú decides</h3>
+        <p>Filtras, revisas el historial y exportas lo que necesites para tu próxima decisión.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="demo-section" id="demo">
+    <div class="section-head">
+      <h2>Así se ve tu panel de precios</h2>
+      <p>Datos de muestra — así luce el historial cuando comparas un mismo producto entre tiendas.</p>
+    </div>
+    <div class="demo-panel">
+      <div class="demo-panel-head">
+        <div>
+          <h3>Price Tracking</h3>
+          <p class="demo-sub">50C6KS · TV LED 50" — 5 tiendas</p>
+        </div>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Probar con tus productos</a>
+      </div>
+      <div class="demo-chart-wrap"><canvas id="demoChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="preview">
+    <div class="section-head">
+      <h2>Y así se ve la tabla</h2>
+    </div>
+    <div class="preview-frame">
+      <div class="preview-row preview-head">
+        <span>Categoría</span><span>Producto</span><span>Marca</span>
+        <span>Falabella</span><span>Sodimac</span><span>Promart</span>
+      </div>
+      <div class="preview-row">
+        <span>TV LED</span><span>UN65M80HAGXPE</span><span>Samsung</span>
+        <span class="price">S/ 2,127</span><span class="price best">S/ 1,955</span><span class="price">S/ 2,222</span>
+      </div>
+      <div class="preview-row">
+        <span>TV LED</span><span>85UR8SG</span><span>Hisense</span>
+        <span class="price best">S/ 1,638</span><span class="price">S/ 1,810</span><span class="price">S/ 1,768</span>
+      </div>
+      <div class="preview-row">
+        <span>TV LED</span><span>50C6KS</span><span>LG</span>
+        <span class="price">S/ 939</span><span class="price">S/ 941</span><span class="price best">S/ 851</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="pricing" id="precios">
+    <div class="section-head">
+      <h2>Un plan a tu medida</h2>
+      <p>El número de tiendas y categorías que monitoreas cambia el costo — armemos el plan
+      que tenga sentido para tu operación, no una tarifa genérica.</p>
+    </div>
+    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Crear cuenta y probarlo</a>
+  </section>
+
+  <section class="final-cta">
+    <h2>Empieza a vigilar tus precios hoy.</h2>
+    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Crear cuenta gratis</a>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">{{ app_name }}</div>
+    <nav class="footer-links">
+      <a href="#producto">Producto</a>
+      <a href="#como-funciona">Cómo funciona</a>
+      <a href="#precios">Precios</a>
+      <a href="{{ url_for('auth.login') }}">Iniciar sesión</a>
+    </nav>
+    <p class="footer-copy">&copy; {{ 2026 }} {{ app_name }}. Datos de referencia mostrados con fines ilustrativos.</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="{{ url_for('static', filename='js/landing-demo.js') }}"></script>
+
+</body>
+</html>

@@ -1,0 +1,22 @@
+# Credenciales y configuración local
+.env
+
+# Entornos y caches de Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Bases de datos y respaldos
+*.db
+
+# Datos de captura, caches y logs
+.*_cache.json
+*.csv
+*.log
+*.err
+revision_tv/
+
+# Documentos del curso
+*.docx
+*.pptx
