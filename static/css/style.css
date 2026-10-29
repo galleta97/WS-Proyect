@@ -481,7 +481,7 @@ a.price-chip:focus-visible{
   font-size:12px;
 }
 
-/* ---------- Dashboard e Inventario (FerreControl) ---------- */
+/* ---------- Dashboard e Inventario (Vigía) ---------- */
 .kpi-grid{
   display:grid;
   grid-template-columns:repeat(4, minmax(0, 1fr));

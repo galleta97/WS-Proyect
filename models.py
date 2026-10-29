@@ -326,7 +326,7 @@ class PriceAlert(db.Model):
 
 
 # ---------------------------------------------------------------------------
-# Inventario (FerreControl): catálogo propio, proveedores, kardex y alertas
+# Inventario (Vigía): catálogo propio, proveedores, kardex y alertas
 # de stock mínimo. Corresponde a las entidades producto, proveedor,
 # movimiento_inventario y alerta (tipo STOCK) del Capítulo 2.
 # ---------------------------------------------------------------------------

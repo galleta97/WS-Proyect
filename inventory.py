@@ -1,5 +1,5 @@
 """
-Lógica de negocio del módulo de inventario (FerreControl).
+Lógica de negocio del módulo de inventario (Vigía).
 
 - register_movement(): registra una entrada, salida o ajuste en una sola
   transacción, actualiza el stock, escribe el kardex y abre o cierra la
