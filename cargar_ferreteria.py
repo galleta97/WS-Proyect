@@ -9,10 +9,15 @@ NO confía ciegamente en él: cada par se vuelve a validar con los datos de hoy.
   2. Sodimac: se lee la ficha del candidato (precio del JSON-LD, GTIN, marca).
   3. El par se acepta si:
        - los dos EAN son válidos e iguales            -> match "ean"
-       - o, sin EAN comparable, coincide la marca, el nombre se parece
-         y el precio está en un rango razonable         -> match "nombre"
+       - o, sin EAN comparable (Sodimac no lo publica): coincide la marca,
+         el nombre se parece, las medidas no se contradicen (pulgadas, kg,
+         galones, W, A, mm, grano, número de alambre...), los colores no se
+         contradicen y el precio está entre 0.75 y 1.33 veces el de Promart
+                                                        -> match "nombre"
      Un EAN distinto descarta el par aunque los nombres se parezcan.
-  4. Con el EAN, busca el mismo producto en Oechsle y Plaza Vea (VTEX).
+     Cada producto de Sodimac se usa una sola vez (gana el par más parecido).
+  4. Con el EAN de Promart busca el mismo producto en Oechsle y Plaza Vea
+     (VTEX); esa coincidencia es exacta, así que sirve aunque Sodimac falle.
   5. Carga los productos con precio en al menos 2 tiendas: una categoría por
      área (PINTURAS, GASFITERIA, ...), la marca de Promart para todas las
      tiendas y el EAN (o el SKU de Promart) como código común.
@@ -31,6 +36,7 @@ Deja el detalle de cada par en carga_ferreteria_report.csv.
 
 import argparse
 import csv
+import html as htmllib
 import io
 import json
 import re
@@ -69,7 +75,7 @@ MATCHES_TO_CHECK = ("sku-exacto", "ok")
 
 # Validación por nombre (cuando no hay EAN comparable)
 MIN_NAME_SIMILARITY = 0.30
-PRICE_RATIO = (0.6, 1.67)          # el precio de Sodimac debe estar dentro de este rango del de Promart
+PRICE_RATIO = (0.75, 1.33)         # el precio de Sodimac debe estar dentro de este rango del de Promart
 
 STOP = {"PARA", "CON", "DEL", "LOS", "LAS", "POR", "SIN", "UNIDAD", "UND", "PACK", "COLOR",
         "MODELO", "NUEVO", "TIPO", "MARCA", "BLANCO", "NEGRO", "GRIS"}
@@ -104,6 +110,67 @@ def similarity(a, b):
     return len(ta & tb) / len(ta | tb) if ta and tb else 0.0
 
 
+UNIT_ALIASES = {
+    "GL": "GL", "GAL": "GL", "GALON": "GL", "GALONES": "GL",
+    "KG": "KG", "KILO": "KG", "KILOS": "KG", "G": "G", "GR": "G",
+    "L": "L", "LT": "L", "LTS": "L", "LITRO": "L", "LITROS": "L", "ML": "ML",
+    "M": "M", "MT": "M", "MTS": "M", "METRO": "M", "METROS": "M", "CM": "CM", "MM": "MM",
+    "W": "W", "V": "V", "A": "A", "HP": "HP", "AWG": "AWG",
+    "PULG": "PULG", "PULGADA": "PULG", "PULGADAS": "PULG", "PZ": "PZ", "PZAS": "PZ", "PIEZAS": "PZ",
+}
+COLORS = {"BLANCO", "NEGRO", "GRIS", "AMARILLO", "ROJO", "AZUL", "VERDE", "DORADO", "PLATEADO",
+          "CROMADO", "TRANSPARENTE", "MARRON", "CAFE", "NARANJA", "TERRACOTA", "BEIGE", "CREMA"}
+
+
+def _num(text):
+    """'1.10' -> '1.1', '.14' -> '0.14', '1-1/2' se deja igual."""
+    if "/" in text:
+        return text
+    try:
+        return ("%g" % float(text))
+    except ValueError:
+        return text
+
+
+def measures(text):
+    """Medidas de un nombre agrupadas por unidad: {'PULG': {'1/2'}, 'KG': {'25'}, 'DIM': {...}}."""
+    s = " " + str(text or "").upper().replace(",", ".") + " "
+    s = s.replace("&QUOT;", '"').replace("&APOS;", "'")
+    s = re.sub(r"(\d)\s*/\s*(\d)", r"\1/\2", s)                  # 1 /2 -> 1/2
+    s = re.sub(r"(\d+)\s+(\d+/\d+)", r"\1-\2", s)                  # 1 1/2 -> 1-1/2
+    s = re.sub(r"(\d)\s*(\"|''|’’)", r"\1 PULG ", s)               # 2" -> 2 PULG
+    s = re.sub(r"(\d)\s*\*\s*(\d)", r"\1X\2", s)                  # 2*3 -> 2X3
+    out = {}
+    def add(unit, value):
+        out.setdefault(unit, set()).add(value)
+    for m in re.finditer(r"(?:#|\bN[º°O]\.?\s*|\bN[ÚU]MERO\s*|\bNRO\.?\s*)(\d+)", s):  # alambre #8 / Nº 16 / Número 8
+        add("NUM", m.group(1))
+    for m in re.finditer(r"GRANO\s*(\d+)", s):
+        add("GRANO", m.group(1))
+    for m in re.finditer(r"(\d*\.?\d+(?:\s*X\s*\d*\.?\d+)+)", s):   # 20X12, 1.85X2.44
+        for part in re.split(r"\s*X\s*", m.group(1)):
+            add("DIM", _num(part))
+    for m in re.finditer(r"(\d+(?:-\d+/\d+)?(?:/\d+)?(?:\.\d+)?)\s*([A-Z]+)\b", s):
+        unit = UNIT_ALIASES.get(m.group(2))
+        if unit:
+            add(unit, _num(m.group(1)))
+    return out
+
+
+def measures_conflict(a, b):
+    """Hay conflicto si una misma unidad aparece en los dos nombres sin ningún valor en común."""
+    for unit in set(a) & set(b):
+        if not (a[unit] & b[unit]):
+            return f"{unit}: {'/'.join(sorted(a[unit]))} vs {'/'.join(sorted(b[unit]))}"
+    return None
+
+
+def colors(text):
+    clean = re.sub(r"[^A-ZÁÉÍÓÚÑ ]", " ", str(text or "").upper())
+    clean = clean.translate(str.maketrans("ÁÉÍÓÚ", "AEIOU"))
+    return {w for w in clean.split() if w in COLORS}
+
+
 def to_float(value):
     """'1,749.90' -> 1749.9 (en estas tiendas la coma separa miles)."""
     if isinstance(value, (int, float)):
@@ -117,24 +184,45 @@ def to_float(value):
 
 
 class Fetcher:
-    """GET con reintentos, pausa entre llamadas y caché del día (para poder reanudar)."""
+    """GET con reintentos, pausa entre llamadas y caché del día (para poder reanudar).
 
-    def __init__(self, delay, use_cache=True):
+    Con `parser`, la caché guarda solo lo que devuelve el parser (unos pocos
+    datos) y no el HTML completo de la página.
+    """
+
+    def __init__(self, delay, use_cache=True, cache_only=False):
         self.delay = delay
+        self.cache_only = cache_only
         self.cache = {}
         if use_cache and CACHE.exists():
             try:
                 self.cache = json.loads(CACHE.read_text(encoding="utf-8"))
             except ValueError:
                 self.cache = {}
+        # Las cachés anteriores guardaban el HTML completo de Sodimac (~1 MB por
+        # ficha): se reducen una sola vez a los datos extraídos.
+        legacy = [k for k, v in self.cache.items() if k.startswith("SODIMAC|") and "body" in v]
+        for key in legacy:
+            entry = self.cache[key]
+            self.cache[key] = {"status": entry["status"],
+                               "data": parse_sodimac(entry["body"]) if entry.get("body") else None}
+        if legacy:
+            self.save()
         self.session = requests.Session()
         self.session.headers.update(HEADERS)
         self.calls = 0
 
-    def get(self, url, kind):
+    def get(self, url, kind, parser=None):
         key = f"{kind}|{url}"
         if key in self.cache:
-            return self.cache[key]
+            entry = self.cache[key]
+            if parser and "body" in entry:          # caché antigua con el HTML completo
+                entry = {"status": entry["status"],
+                         "data": parser(entry["body"]) if entry.get("body") else None}
+                self.cache[key] = entry
+            return entry
+        if self.cache_only:
+            return {"status": "sin-cache", "body": None, "data": None}
         result = {"status": None, "body": None}
         for attempt in range(3):
             try:
@@ -147,12 +235,19 @@ class Fetcher:
             time.sleep(1.5 * (attempt + 1))
         self.calls += 1
         time.sleep(self.delay)
+        if parser:
+            result = {"status": result["status"],
+                      "data": parser(result["body"]) if result.get("body") else None}
         if result["status"] in (200, 404):
             self.cache[key] = result
         return result
 
     def save(self):
-        CACHE.write_text(json.dumps(self.cache, ensure_ascii=False), encoding="utf-8")
+        # Se escribe en un archivo temporal y luego se reemplaza: si el proceso
+        # se interrumpe a mitad, la caché anterior queda intacta.
+        tmp = CACHE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(self.cache, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(CACHE)
 
 
 # ---------------------------------------------------------------------------
@@ -216,7 +311,7 @@ def parse_sodimac(html):
         for node in (data if isinstance(data, list) else [data]):
             if not isinstance(node, dict) or node.get("@type") not in ("Product", ["Product"]):
                 continue
-            info["name"] = node.get("name") or info["name"]
+            info["name"] = htmllib.unescape(node.get("name") or info["name"])
             brand = node.get("brand")
             info["brand"] = (brand.get("name") if isinstance(brand, dict) else brand) or info["brand"]
             info["ean"] = valid_ean(node.get("gtin13") or node.get("gtin") or node.get("gtin12"))
@@ -240,11 +335,9 @@ def parse_sodimac(html):
 
 def sodimac_lookup(fetcher, product_id):
     url = SODIMAC_PRODUCT.format(pid=product_id)
-    res = fetcher.get(url, "SODIMAC")
-    if res["status"] != 200 or not res["body"]:
-        return None
-    info = parse_sodimac(res["body"])
-    if info["price"] is None:
+    res = fetcher.get(url, "SODIMAC", parser=parse_sodimac)
+    info = dict(res.get("data") or {})
+    if res["status"] != 200 or info.get("price") is None:
         return None
     info["ref"] = str(product_id)
     info["link"] = url
@@ -256,23 +349,28 @@ def sodimac_lookup(fetcher, product_id):
 # Validación del par Promart / Sodimac
 # ---------------------------------------------------------------------------
 
-def validate_pair(promart, sodimac, source):
-    """Devuelve (aceptado, tipo_de_match, motivo)."""
+def validate_pair(promart, sodimac):
+    """Devuelve (aceptado, tipo_de_match, motivo, similitud)."""
     ratio = sodimac["price"] / promart["price"]
-    in_range = PRICE_RATIO[0] <= ratio <= PRICE_RATIO[1]
     if promart["ean"] and sodimac["ean"]:
         if promart["ean"] == sodimac["ean"]:
-            return True, "ean", "mismo EAN"
-        return False, "", f"EAN distinto ({promart['ean']} vs {sodimac['ean']})"
+            return True, "ean", "mismo EAN", 1.0
+        return False, "", f"EAN distinto ({promart['ean']} vs {sodimac['ean']})", 0.0
     same_brand = norm_brand(promart["brand"]) and norm_brand(promart["brand"]) == norm_brand(sodimac["brand"])
     sim = similarity(promart["name"] + " " + promart["brand"], sodimac["name"] + " " + sodimac["brand"])
     if not same_brand:
-        return False, "", f"marca distinta ({promart['brand']} vs {sodimac['brand']})"
-    if not in_range:
-        return False, "", f"precio fuera de rango (x{ratio:.2f})"
+        return False, "", f"marca distinta ({promart['brand']} vs {sodimac['brand']})", sim
+    conflict = measures_conflict(measures(promart["name"]), measures(sodimac["name"]))
+    if conflict:
+        return False, "", f"medidas distintas ({conflict})", sim
+    ca, cb = colors(promart["name"]), colors(sodimac["name"])
+    if ca and cb and not (ca & cb):
+        return False, "", f"color distinto ({'/'.join(sorted(ca))} vs {'/'.join(sorted(cb))})", sim
+    if not PRICE_RATIO[0] <= ratio <= PRICE_RATIO[1]:
+        return False, "", f"precio fuera de rango (x{ratio:.2f})", sim
     if sim < MIN_NAME_SIMILARITY:
-        return False, "", f"nombres poco parecidos ({sim:.2f})"
-    return True, "nombre", f"marca y nombre ({sim:.2f}), precio x{ratio:.2f}"
+        return False, "", f"nombres poco parecidos ({sim:.2f})", sim
+    return True, "nombre", f"marca, medidas y nombre ({sim:.2f}), precio x{ratio:.2f}", sim
 
 
 # ---------------------------------------------------------------------------
@@ -335,6 +433,8 @@ def main(argv=None):
     ap.add_argument("--sin-extras", action="store_true", help="no buscar en Oechsle ni Plaza Vea")
     ap.add_argument("--delay", type=float, default=0.6, help="pausa entre consultas en segundos (por defecto 0.6)")
     ap.add_argument("--sin-cache", action="store_true", help="ignora las respuestas guardadas hoy")
+    ap.add_argument("--solo-cache", action="store_true",
+                    help="revalida con las respuestas ya guardadas hoy, sin consultar las tiendas")
     args = ap.parse_args(argv)
 
     if not INPUT.exists():
@@ -345,9 +445,9 @@ def main(argv=None):
         pairs = pairs[:args.limit]
     print(f"Pares a validar: {len(pairs)}")
 
-    fetcher = Fetcher(args.delay, use_cache=not args.sin_cache)
+    fetcher = Fetcher(args.delay, use_cache=not args.sin_cache, cache_only=args.solo_cache)
     today = date.today()
-    products, report = [], []
+    candidates, report = [], []
     try:
         for i, pair in enumerate(pairs, 1):
             area = (pair.get("area") or "FERRETERIA").strip().upper()
@@ -357,36 +457,62 @@ def main(argv=None):
             if promart is None:
                 report.append({**line, "estado": "descartado", "motivo": "sin precio en Promart"})
                 continue
+            line["nombre_promart"] = promart["name"]
+            stores = {"PROMART": promart}
             sodimac = sodimac_lookup(fetcher, pair["candidato_productId"]) if pair["candidato_productId"] else None
-            if sodimac is None:
-                report.append({**line, "estado": "descartado", "motivo": "sin precio en Sodimac"})
-                continue
-            ok, kind, reason = validate_pair(promart, sodimac, pair.get("fuente"))
-            if not ok:
-                report.append({**line, "estado": "descartado", "motivo": reason})
-                continue
-
-            stores = {"PROMART": promart, "SODIMAC": sodimac}
-            ean = promart["ean"] or sodimac["ean"]
+            sod_ok, kind, reason, sim = False, "", "sin precio en Sodimac", 0.0
+            if sodimac is not None:
+                line["nombre_sodimac"] = sodimac["name"]
+                sod_ok, kind, reason, sim = validate_pair(promart, sodimac)
+            ean = promart["ean"] or (sodimac or {}).get("ean")
             if ean and not args.sin_extras:
                 for store in EXTRA_STORES:
                     found = vtex_lookup(fetcher, store, "alternateIds_Ean", ean, want_ean=ean)
                     if found:
                         stores[store] = found
-            code = ean or f"PM{pair['sku_excel']}"
-            products.append({"code": code, "ean": ean, "category": area,
-                             "brand": promart["brand"].upper() or "GENERICO", "stores": stores})
-            report.append({**line, "estado": "aceptado", "motivo": f"{kind}: {reason}",
-                           "tiendas": "+".join(stores), "codigo": code,
-                           "precio_promart": promart["price"], "precio_sodimac": sodimac["price"]})
+            candidates.append({"line": line, "promart": promart, "sodimac": sodimac if sod_ok else None,
+                               "kind": kind, "reason": reason, "sim": sim, "stores": stores, "ean": ean,
+                               "area": area, "sku": pair["sku_excel"]})
             if i % 10 == 0:
                 fetcher.save()
-                print(f"  {i}/{len(pairs)} revisados · aceptados {len(products)}")
+                print(f"  {i}/{len(pairs)} revisados")
     finally:
         fetcher.save()
 
-    fields = ["area", "sku_promart", "producto", "sodimac_id", "estado", "motivo", "tiendas",
-              "codigo", "precio_promart", "precio_sodimac"]
+    # Cada producto de Sodimac se usa una sola vez: gana el par con el nombre
+    # más parecido y, si empatan, el de precio más cercano.
+    by_sodimac = {}
+    for c in candidates:
+        if c["sodimac"]:
+            by_sodimac.setdefault(c["sodimac"]["ref"], []).append(c)
+    for group in by_sodimac.values():
+        group.sort(key=lambda c: (-c["sim"], abs(1 - c["sodimac"]["price"] / c["promart"]["price"])))
+        for loser in group[1:]:
+            loser["sodimac"] = None
+            loser["reason"] = f"el producto de Sodimac ya se asignó a otro SKU ({group[0]['sku']})"
+
+    products = []
+    for c in candidates:
+        stores = dict(c["stores"])
+        if c["sodimac"]:
+            stores["SODIMAC"] = c["sodimac"]
+        extras = [s for s in stores if s in EXTRA_STORES]
+        if len(stores) < 2:
+            report.append({**c["line"], "estado": "descartado", "motivo": c["reason"]})
+            continue
+        code = c["ean"] or f"PM{c['sku']}"
+        products.append({"code": code, "ean": c["ean"], "category": c["area"],
+                         "brand": c["promart"]["brand"].upper() or "GENERICO", "stores": stores})
+        how = (f"Sodimac por {c['kind']}: {c['reason']}" if c["sodimac"]
+               else f"Sodimac descartado ({c['reason']})")
+        if extras:
+            how += f"; EAN en {', '.join(extras)}"
+        report.append({**c["line"], "estado": "aceptado", "motivo": how, "tiendas": "+".join(stores),
+                       "codigo": code, "precio_promart": c["promart"]["price"],
+                       "precio_sodimac": c["sodimac"]["price"] if c["sodimac"] else ""})
+
+    fields = ["area", "sku_promart", "producto", "nombre_promart", "sodimac_id", "nombre_sodimac",
+              "estado", "motivo", "tiendas", "codigo", "precio_promart", "precio_sodimac"]
     with REPORT.open("w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
