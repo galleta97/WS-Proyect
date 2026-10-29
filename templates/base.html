@@ -13,6 +13,14 @@
   <nav class="sidebar">
     <div class="brand">PI</div>
 
+    <a class="nav-icon {{ 'active' if active == 'dashboard' else '' }}" href="{{ url_for('views.dashboard') }}" title="Dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    </a>
+
+    <a class="nav-icon {{ 'active' if active == 'inventory' else '' }}" href="{{ url_for('views.inventory_page') }}" title="Inventario y kardex">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7L12 12l8.7-5"/><path d="M12 22V12"/></svg>
+    </a>
+
     <div class="nav-item {{ 'active' if active == 'top' else '' }}">
       <a class="nav-icon" href="{{ url_for('views.top') }}" title="Búsqueda de precios">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -38,7 +46,7 @@
 
   <main class="content">
     <header class="page-header">
-      <h1>Welcome, {{ current_user.name if current_user.is_authenticated else "Usuario" }}</h1>
+      <h1>{% block page_title %}Welcome, {{ current_user.name if current_user.is_authenticated else "Usuario" }}{% endblock %}</h1>
       <div class="user-box">
         <div>
           <span class="avatar">{{ (current_user.name[0] if current_user.is_authenticated else "U") }}</span>

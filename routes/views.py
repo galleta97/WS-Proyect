@@ -31,3 +31,15 @@ def web_homes_page():
 @login_required
 def alerts_page():
     return render_template("alerts.html", active="alerts")
+
+
+@views_bp.route("/dashboard")
+@login_required
+def dashboard():
+    return render_template("dashboard.html", active="dashboard")
+
+
+@views_bp.route("/inventory")
+@login_required
+def inventory_page():
+    return render_template("inventory.html", active="inventory")

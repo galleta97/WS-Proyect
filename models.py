@@ -323,3 +323,126 @@ class PriceAlert(db.Model):
             "notified": self.notified,
             "notifyError": self.notify_error,
         }
+
+
+# ---------------------------------------------------------------------------
+# Inventario (FerreControl): catálogo propio, proveedores, kardex y alertas
+# de stock mínimo. Corresponde a las entidades producto, proveedor,
+# movimiento_inventario y alerta (tipo STOCK) del Capítulo 2.
+# ---------------------------------------------------------------------------
+
+MOVEMENT_TYPES = ("ENTRADA", "SALIDA", "AJUSTE")
+
+
+class Supplier(db.Model):
+    __tablename__ = "suppliers"
+    id = db.Column(db.Integer, primary_key=True)
+    ruc = db.Column(db.String(11), nullable=False, unique=True)
+    business_name = db.Column(db.String(200), nullable=False)
+    phone = db.Column(db.String(20), nullable=True)
+    email = db.Column(db.String(150), nullable=True)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+
+    def to_dict(self):
+        return {"id": self.id, "ruc": self.ruc, "name": self.business_name}
+
+
+class Product(db.Model):
+    """Producto propio del negocio. `price_code` lo enlaza con los precios
+    capturados de la competencia (PriceEntry.product_code)."""
+    __tablename__ = "products"
+    __table_args__ = (
+        db.CheckConstraint("cost >= 0", name="ck_products_cost"),
+        db.CheckConstraint("sale_price >= 0", name="ck_products_sale_price"),
+        db.CheckConstraint("stock >= 0", name="ck_products_stock"),
+        db.CheckConstraint("min_stock >= 0", name="ck_products_min_stock"),
+    )
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(20), nullable=False, unique=True)
+    name = db.Column(db.String(200), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=False)
+    unit = db.Column(db.String(20), nullable=False, default="unidad")
+    cost = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    sale_price = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    stock = db.Column(db.Integer, nullable=False, default=0)
+    min_stock = db.Column(db.Integer, nullable=False, default=0)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    price_code = db.Column(db.String(160), nullable=True, index=True)
+
+    category = db.relationship("Category")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "code": self.code,
+            "name": self.name,
+            "category": self.category.code if self.category else None,
+            "unit": self.unit,
+            "cost": float(self.cost),
+            "salePrice": float(self.sale_price),
+            "stock": self.stock,
+            "minStock": self.min_stock,
+            "active": self.active,
+            "priceCode": self.price_code,
+        }
+
+
+class StockMovement(db.Model):
+    """Una fila del kardex: entrada, salida o ajuste, con el stock resultante."""
+    __tablename__ = "stock_movements"
+    __table_args__ = (
+        db.CheckConstraint("quantity <> 0", name="ck_movements_quantity"),
+        db.CheckConstraint("resulting_stock >= 0", name="ck_movements_resulting_stock"),
+        db.CheckConstraint("type IN ('ENTRADA', 'SALIDA', 'AJUSTE')", name="ck_movements_type"),
+        db.Index("ix_movements_product_date", "product_id", "created_at"),
+    )
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey("products.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    supplier_id = db.Column(db.Integer, db.ForeignKey("suppliers.id"), nullable=True)
+    type = db.Column(db.String(10), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)          # negativa en salidas
+    resulting_stock = db.Column(db.Integer, nullable=False)
+    reason = db.Column(db.String(200), nullable=True)          # motivo o n.° de guía
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+
+    product = db.relationship("Product")
+    user = db.relationship("User")
+    supplier = db.relationship("Supplier")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "productId": self.product_id,
+            "type": self.type,
+            "quantity": self.quantity,
+            "resultingStock": self.resulting_stock,
+            "reason": self.reason,
+            "supplier": self.supplier.business_name if self.supplier else None,
+            "user": self.user.name if self.user else None,
+            "createdAt": self.created_at.isoformat(timespec="minutes"),
+        }
+
+
+class StockAlert(db.Model):
+    """Alerta de stock mínimo: se abre al llegar al mínimo y se cierra sola
+    cuando una entrada o ajuste deja el stock por encima de él."""
+    __tablename__ = "stock_alerts"
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey("products.id"), nullable=False)
+    message = db.Column(db.String(255), nullable=False)
+    status = db.Column(db.String(10), nullable=False, default="ABIERTA")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    closed_at = db.Column(db.DateTime, nullable=True)
+
+    product = db.relationship("Product")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "productId": self.product_id,
+            "product": self.product.name if self.product else None,
+            "message": self.message,
+            "status": self.status,
+            "createdAt": self.created_at.isoformat(timespec="minutes"),
+        }

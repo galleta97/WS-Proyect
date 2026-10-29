@@ -20,3 +20,13 @@ revision_tv/
 # Documentos del curso
 *.docx
 *.pptx
+_para_subir/
+
+# Scripts auxiliares de carga y validación (solo uso local)
+cruce_promart_sodimac.py
+mapear_promart_por_sku.py
+refresh_sodimac_prices.py
+rellenar_hueco.py
+rescore_cruce.py
+seed_demo_history.py
+validar_sku_sodimac.py

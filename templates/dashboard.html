@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="kpi-grid">
+  <div class="kpi">
+    <div class="kpi-label">Productos activos</div>
+    <div class="kpi-value" id="kpi-active">—</div>
+    <div class="kpi-sub" id="kpi-active-sub">&nbsp;</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Bajo stock mínimo</div>
+    <div class="kpi-value is-danger" id="kpi-low">—</div>
+    <div class="kpi-sub">requieren reposición</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Más caros que la competencia</div>
+    <div class="kpi-value is-accent" id="kpi-expensive">—</div>
+    <div class="kpi-sub" id="kpi-expensive-sub">según la última captura</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Movimientos del día</div>
+    <div class="kpi-value" id="kpi-moves">—</div>
+    <div class="kpi-sub" id="kpi-moves-sub">&nbsp;</div>
+  </div>
+</div>
+
+<div class="dash-grid">
+  <section class="card">
+    <div class="card-header">
+      <h2>Productos por agotarse</h2>
+      <button class="btn-export" id="btn-export-low">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        XLSX
+      </button>
+    </div>
+    <div class="table-scroll" id="low-wrap"><p class="empty">Cargando…</p></div>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2>Productos de mayor rotación (últimos 30 días)</h2>
+    </div>
+    <div class="chart-box" id="rotation-box"><canvas id="chart-rotation"></canvas></div>
+  </section>
+</div>
+
+<section class="card">
+  <div class="card-header">
+    <h2>Más caros que la competencia</h2>
+    <span class="card-meta" id="last-capture"></span>
+  </div>
+  <div class="table-scroll" id="cmp-wrap"><p class="empty">Cargando…</p></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

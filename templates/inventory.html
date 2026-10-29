@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Inventario{% endblock %}
+{% block page_title %}Inventario · Registrar movimiento{% endblock %}
+
+{% block content %}
+<div class="tabs" id="type-tabs">
+  <button class="tab active" data-type="ENTRADA">Entrada</button>
+  <button class="tab" data-type="SALIDA">Salida</button>
+  <button class="tab" data-type="AJUSTE">Ajuste</button>
+</div>
+
+<form class="move-form" id="move-form" autocomplete="off">
+  <div class="field">
+    <label for="f-product">Producto</label>
+    <input id="f-product" list="product-list" placeholder="Busca por código o nombre…" required>
+    <datalist id="product-list"></datalist>
+  </div>
+  <div class="field">
+    <label for="f-qty" id="qty-label">Cantidad</label>
+    <input id="f-qty" type="number" step="1" min="1" required>
+  </div>
+  <div class="field" id="supplier-field">
+    <label for="f-supplier">Proveedor</label>
+    <select id="f-supplier"><option value="">— Sin proveedor —</option></select>
+  </div>
+  <div class="field" id="reason-field">
+    <label for="f-reason" id="reason-label">Guía de remisión</label>
+    <input id="f-reason" maxlength="200" list="reason-list">
+    <datalist id="reason-list"></datalist>
+  </div>
+  <button class="btn-primary" id="btn-register" type="submit">Registrar</button>
+</form>
+<div id="form-message" class="form-message"></div>
+
+<div class="kpi-grid">
+  <div class="kpi">
+    <div class="kpi-label">Stock actual</div>
+    <div class="kpi-value" id="st-current">—</div>
+    <div class="kpi-sub" id="st-unit">&nbsp;</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Stock mínimo</div>
+    <div class="kpi-value" id="st-min">—</div>
+    <div class="kpi-sub" id="st-alert">&nbsp;</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Stock después del registro</div>
+    <div class="kpi-value" id="st-after">—</div>
+    <div class="kpi-sub" id="st-after-sub">&nbsp;</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Precio de venta</div>
+    <div class="kpi-value" id="st-price">—</div>
+    <div class="kpi-sub" id="st-cost">&nbsp;</div>
+  </div>
+</div>
+
+<section class="card">
+  <div class="card-header">
+    <h2 id="kardex-title">Kardex</h2>
+    <button class="btn-export" id="btn-export-kardex" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      XLSX
+    </button>
+  </div>
+  <div class="table-scroll" id="kardex-wrap"><p class="empty">Selecciona un producto para ver su kardex</p></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/inventory.js') }}"></script>
+{% endblock %}

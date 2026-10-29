@@ -27,10 +27,12 @@ def create_app():
     from routes.api import api_bp
     from routes.views import views_bp
     from routes.auth import auth_bp
+    from routes.inventory_api import inventory_api_bp
 
     app.register_blueprint(api_bp)
     app.register_blueprint(views_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(inventory_api_bp)
 
     @app.context_processor
     def inject_user():
